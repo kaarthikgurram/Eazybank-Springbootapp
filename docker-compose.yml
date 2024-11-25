@@ -1,0 +1,17 @@
+services:
+  accounts:
+    image: "kairagurram/accounts:s4"
+    container_name: accounts_ms
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: "700m"
+    networks:
+      - kairagurram-network
+networks:
+  kairagurram-network:
+    driver: bridge
+
+
