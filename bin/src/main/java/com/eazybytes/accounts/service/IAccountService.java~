@@ -1,0 +1,18 @@
+package com.eazybytes.accounts.service;
+
+import com.eazybytes.accounts.dto.CustomerDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public interface IAccountService {
+
+
+    void createAccount(CustomerDto customerDto);
+
+    CustomerDto fetchAccountDetails(String mobileNumber);
+
+    boolean updateAccount(CustomerDto customerDto);
+
+    boolean deleteAccount(String mobileNumber);
+
+}

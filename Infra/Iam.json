@@ -1,0 +1,71 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "CloudFormation template to create an IAM Role",
+
+  "Resources": {
+    "MyIAMRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "my-sample-iam-role",
+
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+        ],
+
+        "Policies": [
+          {
+            "PolicyName": "CustomInlinePolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:ListBucket"
+                  ],
+                  "Resource": [
+                    "arn:aws:s3:::mybucket-kgurram",
+                    "arn:aws:s3:::mybucket-kgurram/*"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+
+  "Outputs": {
+    "IAMRoleName": {
+      "Description": "Name of the created IAM Role",
+      "Value": {
+        "Ref": "MyIAMRole"
+      }
+    },
+
+    "IAMRoleArn": {
+      "Description": "ARN of the created IAM Role",
+      "Value": {
+        "Fn::GetAtt": [
+          "MyIAMRole",
+          "Arn"
+        ]
+      }
+    }
+  }
+}
