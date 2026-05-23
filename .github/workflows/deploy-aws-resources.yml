@@ -6,6 +6,30 @@ on:
       - master
 
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select target environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+
+      stack_name:
+        description: "CloudFormation stack name"
+        required: true
+        type: string
+
+      template_file:
+        description: "CloudFormation template path"
+        required: true
+        type: choice
+        options:
+          - Infra/Iam.json
+          - Infra/Vpc.json
+          - Infra/Ecs.json
+          - Infra/Rds.json
 
 permissions:
   id-token: write
@@ -13,23 +37,37 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  STACK_NAME: my-aws-resources-stack2
-  TEMPLATE_FILE: Infra/Iam.json
 
 jobs:
   deploy:
-    name: Deploy to AWS Account
+    name: Deploy ${{ inputs.stack_name }} to ${{ inputs.environment }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
 
+      - name: Set AWS role and stack prefix
+        run: |
+          if [ "${{ inputs.environment }}" = "dev" ]; then
+            echo "ROLE_ARN=arn:aws:iam::626635420218:role/AssumeRole" >> $GITHUB_ENV
+            echo "STACK_PREFIX=dev" >> $GITHUB_ENV
+          elif [ "${{ inputs.environment }}" = "qa" ]; then
+            echo "ROLE_ARN=arn:aws:iam::626635420218:role/AssumeRole" >> $GITHUB_ENV
+            echo "STACK_PREFIX=qa" >> $GITHUB_ENV
+          elif [ "${{ inputs.environment }}" = "prod" ]; then
+            echo "ROLE_ARN=arn:aws:iam::626635420218:role/AssumeRole" >> $GITHUB_ENV
+            echo "STACK_PREFIX=prod" >> $GITHUB_ENV
+          else
+            echo "Invalid environment selected"
+            exit 1
+          fi
+
       - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::626635420218:role/AssumeRole
-          aws-region: us-east-1
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Verify AWS account
         run: |
