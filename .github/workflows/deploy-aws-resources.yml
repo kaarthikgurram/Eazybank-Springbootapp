@@ -12,101 +12,74 @@ on:
           - qa
           - prod
 
+      stack_name:
+        description: "CloudFormation stack name"
+        required: true
+        type: string
+
+      template_file:
+        description: "CloudFormation template path"
+        required: true
+        type: choice
+        options:
+          - Infra/Iam.json
+          - Infra/Vpc.json
+          - Infra/Ecs.json
+          - Infra/Rds.json
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
 jobs:
-  test:
+  deploy:
+    name: Deploy ${{ inputs.stack_name }} to ${{ inputs.environment }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Print selected environment
-        run: |
-          echo "Environment is ${{ inputs.environment }}"
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-#name: Deploy AWS Resources
-#
-#on:
-#  push:
-#    branches:
-#      - master
-#
-#  workflow_dispatch:
-#    inputs:
-#      environment:
-#        description: "Select target environment"
-#        required: true
-#        type: choice
-#        options:
-#          - dev
-#          - qa
-#          - prod
-#
-#      stack_name:
-#        description: "CloudFormation stack name"
-#        required: true
-#        type: string
-#
-#      template_file:
-#        description: "CloudFormation template path"
-#        required: true
-#        type: choice
-#        options:
-#          - Infra/Iam.json
-#          - Infra/Vpc.json
-#          - Infra/Ecs.json
-#          - Infra/Rds.json
-#
-#permissions:
-#  id-token: write
-#  contents: read
-#
-#env:
-#  AWS_REGION: us-east-1
-#
-#jobs:
-#  deploy:
-#    name: Deploy ${{ inputs.stack_name }} to ${{ inputs.environment }}
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout source code
-#        uses: actions/checkout@v4
-#
-#      - name: Set AWS role and stack prefix
-#        run: |
-#          ENVIRONMENT="${{ inputs.environment || 'dev' }}"
-#
-#          if [ "$ENVIRONMENT" = "dev" ]; then
-#            echo "ROLE_ARN=arn:aws:iam::626635420218:role/AssumeRole" >> $GITHUB_ENV
-#            echo "STACK_PREFIX=dev" >> $GITHUB_ENV
-#          elif [ "$ENVIRONMENT" = "qa" ]; then
-#            echo "ROLE_ARN=arn:aws:iam::626635420218:role/AssumeRole" >> $GITHUB_ENV
-#            echo "STACK_PREFIX=qa" >> $GITHUB_ENV
-#          elif [ "$ENVIRONMENT" = "prod" ]; then
-#            echo "ROLE_ARN=arn:aws:iam::626635420218:role/AssumeRole" >> $GITHUB_ENV
-#            echo "STACK_PREFIX=prod" >> $GITHUB_ENV
-#          else
-#            echo "Invalid environment selected"
-#            exit 1
-#          fi
-#
-#      - name: Configure AWS credentials using OIDC
-#        uses: aws-actions/configure-aws-credentials@v4
-#        with:
-#          role-to-assume: ${{ env.ROLE_ARN }}
-#          aws-region: ${{ env.AWS_REGION }}
-#
-#      - name: Verify AWS account
-#        run: |
-#          aws sts get-caller-identity
-#
-#      - name: Validate CloudFormation template
-#        run: |
-#          aws cloudformation validate-template \
-#            --template-body file://${{ inputs.template_file }}
-#
-#      - name: Deploy CloudFormation stack
-#        run: |
-#          aws cloudformation deploy \
-#            --stack-name ${{ env.STACK_PREFIX }}-${{ inputs.stack_name  }} \
-#            --template-file ${{ inputs.template_file  }} \
-#            --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-#            --no-fail-on-empty-changeset
+      - name: Set AWS role and stack prefix
+        run: |
+          ENVIRONMENT="${{ inputs.environment || 'dev' }}"
+
+          if [ "$ENVIRONMENT" = "dev" ]; then
+            echo "ROLE_ARN=arn:aws:iam::626635420218:role/AssumeRole" >> $GITHUB_ENV
+            echo "STACK_PREFIX=dev" >> $GITHUB_ENV
+          elif [ "$ENVIRONMENT" = "qa" ]; then
+            echo "ROLE_ARN=arn:aws:iam::626635420218:role/AssumeRole" >> $GITHUB_ENV
+            echo "STACK_PREFIX=qa" >> $GITHUB_ENV
+          elif [ "$ENVIRONMENT" = "prod" ]; then
+            echo "ROLE_ARN=arn:aws:iam::626635420218:role/AssumeRole" >> $GITHUB_ENV
+            echo "STACK_PREFIX=prod" >> $GITHUB_ENV
+          else
+            echo "Invalid environment selected"
+            exit 1
+          fi
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS account
+        run: |
+          aws sts get-caller-identity
+
+      - name: Validate CloudFormation template
+        run: |
+          aws cloudformation validate-template \
+            --template-body file://${{ inputs.template_file }}
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --stack-name ${{ env.STACK_PREFIX }}-${{ inputs.stack_name  }} \
+            --template-file ${{ inputs.template_file  }} \
+            --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+            --no-fail-on-empty-changeset
