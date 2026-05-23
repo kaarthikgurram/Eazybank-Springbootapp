@@ -6,7 +6,7 @@
     "MyIAMRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
-        "RoleName": "my-sample-iam-role",
+        "RoleName": "my-sample-iam-role2",
 
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
