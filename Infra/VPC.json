@@ -1,0 +1,276 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "CloudFormation template to create VPC, public subnets, internet gateway, route table, and routes",
+
+  "Parameters": {
+    "EnvironmentName": {
+      "Type": "String",
+      "Description": "Environment name",
+      "AllowedValues": [
+        "dev",
+        "qa",
+        "prod"
+      ]
+    },
+    "ResourceName": {
+      "Type": "String",
+      "Description": "Base resource name for VPC resources",
+      "Default": "eazybank"
+    },
+    "VpcCidr": {
+      "Type": "String",
+      "Description": "CIDR block for the VPC",
+      "Default": "10.0.0.0/16"
+    },
+    "PublicSubnetOneCidr": {
+      "Type": "String",
+      "Description": "CIDR block for public subnet one",
+      "Default": "10.0.1.0/24"
+    },
+    "PublicSubnetTwoCidr": {
+      "Type": "String",
+      "Description": "CIDR block for public subnet two",
+      "Default": "10.0.2.0/24"
+    }
+  },
+
+  "Resources": {
+    "ApplicationVpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": {
+          "Ref": "VpcCidr"
+        },
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Sub": "${EnvironmentName}-${ResourceName}-vpc"
+            }
+          },
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "EnvironmentName"
+            }
+          }
+        ]
+      }
+    },
+
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Sub": "${EnvironmentName}-${ResourceName}-igw"
+            }
+          },
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "EnvironmentName"
+            }
+          }
+        ]
+      }
+    },
+
+    "AttachGateway": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ApplicationVpc"
+        },
+        "InternetGatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+
+    "PublicSubnetOne": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ApplicationVpc"
+        },
+        "CidrBlock": {
+          "Ref": "PublicSubnetOneCidr"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Sub": "${EnvironmentName}-${ResourceName}-public-subnet-1"
+            }
+          },
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "EnvironmentName"
+            }
+          }
+        ]
+      }
+    },
+
+    "PublicSubnetTwo": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ApplicationVpc"
+        },
+        "CidrBlock": {
+          "Ref": "PublicSubnetTwoCidr"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Sub": "${EnvironmentName}-${ResourceName}-public-subnet-2"
+            }
+          },
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "EnvironmentName"
+            }
+          }
+        ]
+      }
+    },
+
+    "PublicRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ApplicationVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Sub": "${EnvironmentName}-${ResourceName}-public-rt"
+            }
+          },
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "EnvironmentName"
+            }
+          }
+        ]
+      }
+    },
+
+    "PublicRoute": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": "AttachGateway",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PublicRouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+
+    "PublicSubnetOneRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicSubnetOne"
+        },
+        "RouteTableId": {
+          "Ref": "PublicRouteTable"
+        }
+      }
+    },
+
+    "PublicSubnetTwoRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicSubnetTwo"
+        },
+        "RouteTableId": {
+          "Ref": "PublicRouteTable"
+        }
+      }
+    }
+  },
+
+  "Outputs": {
+    "VpcId": {
+      "Description": "VPC ID",
+      "Value": {
+        "Ref": "ApplicationVpc"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${EnvironmentName}-${ResourceName}-VpcId"
+        }
+      }
+    },
+
+    "PublicSubnetOneId": {
+      "Description": "Public subnet one ID",
+      "Value": {
+        "Ref": "PublicSubnetOne"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${EnvironmentName}-${ResourceName}-PublicSubnetOneId"
+        }
+      }
+    },
+
+    "PublicSubnetTwoId": {
+      "Description": "Public subnet two ID",
+      "Value": {
+        "Ref": "PublicSubnetTwo"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${EnvironmentName}-${ResourceName}-PublicSubnetTwoId"
+        }
+      }
+    },
+
+    "InternetGatewayId": {
+      "Description": "Internet gateway ID",
+      "Value": {
+        "Ref": "InternetGateway"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${EnvironmentName}-${ResourceName}-InternetGatewayId"
+        }
+      }
+    }
+  }
+}

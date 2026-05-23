@@ -27,6 +27,11 @@ on:
           - Infra/Ecs.json
           - Infra/Rds.json
 
+      resource_name:
+        description: "Resource name to create"
+        required: true
+        type: string
+
 permissions:
   id-token: write
   contents: read
@@ -82,4 +87,7 @@ jobs:
             --stack-name ${{ env.STACK_PREFIX }}-${{ inputs.stack_name  }} \
             --template-file ${{ inputs.template_file  }} \
             --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+            --parameter-overrides \
+            EnvironmentName=${{ inputs.environment }} \
+            ResourceName=${{ inputs.resource_name }} \          
             --no-fail-on-empty-changeset

@@ -2,11 +2,29 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "CloudFormation template to create an IAM Role",
 
+  "Parameters": {
+    "EnvironmentName": {
+      "Type": "String",
+      "Description": "Environment name",
+      "AllowedValues": [
+        "dev",
+        "qa",
+        "prod"
+      ]
+    },
+    "ResourceName": {
+      "Type": "String",
+      "Description": "Name of the IAM role"
+    }
+  },
+
   "Resources": {
     "MyIAMRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
-        "RoleName": "my-sample-iam-role2",
+        "RoleName": {
+          "Fn::Sub": "${EnvironmentName}-${ResourceName}"
+        },
 
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
