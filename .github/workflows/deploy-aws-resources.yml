@@ -76,12 +76,12 @@ jobs:
       - name: Validate CloudFormation template
         run: |
           aws cloudformation validate-template \
-            --template-body file://${{ env.TEMPLATE_FILE }}
+            --template-body file://${{ inputs.template_file }}
 
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
-            --stack-name ${{ env.STACK_NAME }} \
-            --template-file ${{ env.TEMPLATE_FILE }} \
-            --capabilities CAPABILITY_NAMED_IAM \
+            --stack-name ${{ env.STACK_PREFIX }}-${{ inputs.stack_name }} \
+            --template-file ${{ inputs.template_file }} \
+            --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
             --no-fail-on-empty-changeset
